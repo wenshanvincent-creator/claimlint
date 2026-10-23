@@ -1,0 +1,7 @@
+[project]
+name = "demo"
+version = "1.0.0"
+dependencies = []
+
+[project.scripts]
+demo = "demo.cli:main"

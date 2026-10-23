@@ -1,0 +1,7 @@
+[project]
+name = "clean_demo"
+version = "1.0.0"
+dependencies = ["pytest", "ruff"]
+
+[project.scripts]
+clean-demo = "demo.cli:main"

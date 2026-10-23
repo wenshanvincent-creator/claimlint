@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "claimlint"
+version = "0.1.0"
+description = "Check executable claims in Python documentation against source evidence."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = ["markdown-it-py>=3,<5", "tomli>=2; python_version < '3.11'"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Documentation",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+claimlint = "claimlint.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/wenshanvincent-creator/claimlint"
+Repository = "https://github.com/wenshanvincent-creator/claimlint"
+Issues = "https://github.com/wenshanvincent-creator/claimlint/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "build>=1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/claimlint"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/docs/original-spec.txt"]
+include = [
+  "/src", "/tests", "/docs", "/README.md", "/AGENTS.md", "/CONTRIBUTING.md",
+  "/CHANGELOG.md", "/RELEASING.md", "/LICENSE", "/pyproject.toml", "/action.yml", "/.github",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["fixtures"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.claimlint]
+docs = ["README.md", "CONTRIBUTING.md", "docs/**/*.md"]
+ignore_paths = ["tests/fixtures/**", "evaluation/**"]

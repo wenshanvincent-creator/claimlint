@@ -1,0 +1,6 @@
+Excerpt source: https://raw.githubusercontent.com/astral-sh/ruff/2fa2ecbbf745e8de8b785e7c5cc7aff83f7f2ed4/AGENTS.md
+Commit: 2fa2ecbbf745e8de8b785e7c5cc7aff83f7f2ed4
+Retrieved: 2026-10-23
+Excerpt with trailing boundary blank lines trimmed between the workspace-test instructions and the fallback heading.
+Only command attribution is tested; this is not a full Ruff repository scan.
+Copyright (c) Astral Software Inc.; used under the MIT license.
