@@ -1,4 +1,6 @@
 import difflib
+from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
@@ -56,6 +58,22 @@ def test_fixer_rejects_broken_python_syntax(project):
 def test_fixer_preserves_windows_line_endings():
     patch = "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n"
     assert apply_patch("old\r\n", patch, "README.md") == "new\r\n"
+
+
+def test_fixer_canonicalizes_temporary_directory_aliases(project, monkeypatch):
+    import claimlint.fixer as fixer_module
+
+    temporary_directory = fixer_module.tempfile.TemporaryDirectory
+
+    @contextmanager
+    def aliased_directory(*args, **kwargs):
+        with temporary_directory(*args, **kwargs) as directory:
+            path = Path(directory)
+            yield str(path / ".." / path.name)
+
+    monkeypatch.setattr(fixer_module.tempfile, "TemporaryDirectory", aliased_directory)
+    result = fix(project(), ReplaceBackend("columns=80", "width=80"), Options(select={"DP003"}))
+    assert len(result.accepted) == 1 and not result.rejected
 
 
 @pytest.mark.parametrize(

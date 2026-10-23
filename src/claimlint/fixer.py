@@ -151,7 +151,7 @@ def fix(root: Path, backend: Fixer, options: Options, apply: bool = False) -> Fi
     # Validation is static: a model-edited example is never executed by the fixer.
     validation = Options(select=options.select)
     with tempfile.TemporaryDirectory(prefix="claimlint-validate-") as directory:
-        staging = Path(directory) / "project"
+        staging = (Path(directory) / "project").resolve()
 
         def copy_for_validation(source, destination):
             # Static scans need source/text contents and link-target existence, not large assets.
