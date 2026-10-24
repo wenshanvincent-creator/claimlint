@@ -1,4 +1,9 @@
 import json
+import os
+import subprocess
+import sys
+
+import pytest
 
 from claimlint.baseline import apply_baseline, write_baseline
 from claimlint.cli import main
@@ -73,3 +78,30 @@ def test_summary_and_nested_project_annotation_paths(project, capsys, monkeypatc
     assert main(["check", str(root), "--format", "github", "--summary", str(summary)]) == 1
     assert "file=drift/README.md" in capsys.readouterr().out
     assert "### claimlint:" in summary.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("format", ["json", "text", "github"])
+def test_unicode_output_with_windows_legacy_pipe_encoding(project, format):
+    root = project("clean")
+    (root / "docs").mkdir(exist_ok=True)
+    (root / "docs/不存在🤦.md").write_text("[missing](absent.md)\n", encoding="utf-8")
+    process = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "claimlint",
+            "check",
+            str(root),
+            "--format",
+            format,
+            "--select",
+            "DP006",
+        ],
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        capture_output=True,
+    )
+    assert process.returncode == 1, process.stderr.decode("utf-8")
+    output = process.stdout.decode("utf-8")
+    assert "不存在🤦.md" in output
+    if format == "json":
+        assert json.loads(output)["findings"][0]["check"] == "DP006"

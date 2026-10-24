@@ -13,7 +13,7 @@ Requires Python 3.10 or newer and a project with a `pyproject.toml`.
 Install the release:
 
 ```sh
-python -m pip install claimlint==0.1.0
+python -m pip install claimlint==0.1.1
 claimlint check .
 ```
 
@@ -39,12 +39,15 @@ See the [usefulness assessment](docs/assessment.md) for the comparison and desig
 | DP003 | AST function/method signatures | Bound arguments of calls in complete Python examples |
 | DP004 | Subprocess exit status and traceback | Opt-in execution of Python fences, one fresh process per block |
 | DP005 | Literal environment reads and settings fields | Environment names and pydantic settings documentation coverage |
-| DP006 | Filesystem and Markdown heading IDs | Relative links, images, reference links, and anchors |
+| DP006 | Filesystem, Markdown IDs and static renderer configuration | Relative links, images, MyST labels, MkDocs routes and anchors |
 | DP007 | Project metadata, Makefile, filesystem | Commands and file/test paths in AGENTS.md and CLAUDE.md |
 
 Unknown flags, symbols, invalid calls, missing agent paths, and broken links are errors.
-Potentially stale environment names are warnings. Undocumented options, environment variables,
-settings fields, and undeclared agent tools are notes. Notes do not fail the default gate.
+Settings field mismatches are warnings. Missing literal environment reads are skipped because
+dependencies or dynamic readers may handle them. Environment coverage notes describe missing
+mentions in searched documents, including supplemental RST and root changelogs.
+Undocumented options, settings fields, and undeclared agent tools are also notes.
+Notes do not fail the default gate.
 `--min-severity note` makes documentation coverage a gate too.
 
 A report names how many documents it read and how many claims each check examined or skipped.
@@ -167,7 +170,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: wenshanvincent-creator/claimlint@v0.1.0
+      - uses: wenshanvincent-creator/claimlint@v0.1.1
         with:
           path: .
           min-severity: warning

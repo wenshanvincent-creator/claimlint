@@ -3,15 +3,43 @@ from __future__ import annotations
 import re
 
 from ..code_index import CodeIndex
+from ..config import Config
 from ..model import Claim, Coverage, Finding
 from .common import SHELL_LANGUAGES
 
 ENV = re.compile(r"(?:\$\{?|\bexport\s+|\bos\.(?:getenv|environ\.get)\(['\"])([A-Z][A-Z0-9_]+)")
 
 
-def check(claims: list[Claim], index: CodeIndex, coverage: Coverage) -> list[Finding]:
+def documentation_text(config: Config, coverage: Coverage) -> str:
+    paths = set(config.documents())
+    # RST is searched only for mentions, not parsed as Markdown for other checks.
+    for pattern in config.docs:
+        if pattern.endswith(".md"):
+            for path in config.root.glob(pattern[:-3] + ".rst"):
+                if path.is_file() and not config.ignored(path):
+                    paths.add(path)
+                    relative = path.relative_to(config.root).as_posix()
+                    coverage.skip(f"{relative}: RST searched for mentions only")
+    for name in (
+        "CHANGES.md",
+        "CHANGELOG.md",
+        "HISTORY.md",
+        "CHANGES.rst",
+        "CHANGELOG.rst",
+        "HISTORY.rst",
+    ):
+        path = config.root / name
+        if path.is_file() and path not in paths and not config.ignored(path):
+            paths.add(path)
+            coverage.skip(f"{name}: changelog searched for mentions only")
+    return "\n".join(path.read_text(encoding="utf-8-sig") for path in sorted(paths))
+
+
+def check(
+    claims: list[Claim], index: CodeIndex, coverage: Coverage, documentation: str = ""
+) -> list[Finding]:
     findings = []
-    content = "\n".join(claim.text for claim in claims)
+    content = documentation or "\n".join(claim.text for claim in claims)
     if not claims:
         coverage.skip("No active documentation claims")
         return findings
@@ -25,12 +53,12 @@ def check(claims: list[Claim], index: CodeIndex, coverage: Coverage) -> list[Fin
                     "note",
                     anchor.file,
                     anchor.line,
-                    f"Environment variable {variable!r} read by the project is undocumented",
+                    f"Environment variable {variable!r} read by the project "
+                    "has no mention in searched documentation",
                     {"claim": variable, "read_at": ref},
                     ref,
                 )
             )
-    known_prefixes = {name.split("_", 1)[0] for name in index.env if "_" in name}
     for claim in claims:
         documented = set(ENV.findall(claim.text))
         if claim.kind == "code" and claim.language in SHELL_LANGUAGES:
@@ -45,23 +73,9 @@ def check(claims: list[Claim], index: CodeIndex, coverage: Coverage) -> list[Fin
         if claim.kind == "inline" and re.fullmatch(r"[A-Z][A-Z0-9]*_[A-Z0-9_]+", claim.text):
             documented.add(claim.text)
         for variable in sorted(documented - index.env.keys()):
-            if variable.split("_", 1)[0] not in known_prefixes:
-                coverage.skip(
-                    f"{variable}: cannot attribute environment variable to this project", claim
-                )
-                continue
-            coverage.checked += 1
-            findings.append(
-                Finding(
-                    "DP005",
-                    "warning",
-                    claim.file,
-                    claim.line,
-                    f"Documented environment variable {variable!r} "
-                    "has no literal read in project source",
-                    {"claim": variable, "read_variables": sorted(index.env)},
-                    suggestion="Check for a rename or a dynamic/third-party environment reader",
-                )
+            coverage.skip(
+                f"{variable}: no literal project read; dynamic or dependency reads are unverified",
+                claim,
             )
     for symbol in sorted(index.symbols.values(), key=lambda s: s.name):
         if not symbol.settings:

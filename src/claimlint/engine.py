@@ -52,7 +52,11 @@ def scan(root: Path, options: Options | None = None, config: Config | None = Non
             else:
                 stats.skip("Example execution is disabled; enable --run-examples for trusted code")
         elif key == "DP005":
-            findings.extend(config_env.check(current, index, stats))
+            findings.extend(
+                config_env.check(
+                    current, index, stats, config_env.documentation_text(config, stats)
+                )
+            )
         elif key == "DP006":
             findings.extend(links.check(current, config.root, stats))
         elif key == "DP007":

@@ -3,7 +3,6 @@
   ["DP001", "error", "README.md", 5, "--output"],
   ["DP002", "error", "README.md", 8, "demo.rendr"],
   ["DP003", "error", "README.md", 13, "render('hello', columns=80)"],
-  ["DP005", "warning", "README.md", 16, "DEMO_OLD_TOKEN"],
   ["DP006", "error", "README.md", 18, "docs/missing.md"],
   ["DP006", "error", "README.md", 18, "#old-title"],
   ["DP007", "error", "AGENTS.md", 4, "scripts/deleted.py"],

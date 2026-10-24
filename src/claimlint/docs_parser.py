@@ -117,12 +117,22 @@ def slug(text: str) -> str:
     return re.sub(r"[^\w\- ]", "", text.lower()).replace(" ", "-")
 
 
-def anchors(claims: list[Claim], text: str) -> set[str]:
+def myst_labels(text: str) -> set[str]:
+    return {
+        match[1]
+        for token in MarkdownIt("commonmark").parse(text)
+        if token.type == "inline"
+        for match in re.finditer(r"(?m)^\(([^\n]+)\)=\s*$", token.content)
+    }
+
+
+def anchors(claims: list[Claim], text: str, *, attribute_ids: bool = False) -> set[str]:
     result: set[str] = set()
     counts: dict[str, int] = {}
     for claim in claims:
         if claim.kind == "heading":
-            base = slug(claim.text)
+            heading = re.sub(r"\s*\{[^{}]*\}\s*$", "", claim.text) if attribute_ids else claim.text
+            base = slug(heading)
             number = counts.get(base, 0)
             candidate = f"{base}-{number}" if number else base
             while candidate in result:
@@ -132,6 +142,12 @@ def anchors(claims: list[Claim], text: str) -> set[str]:
             counts[base] = number + 1
     # Only rendered HTML contributes anchors; HTML shown inside code fences does not.
     for token in MarkdownIt("commonmark", {"html": True}).parse(text):
+        if attribute_ids and token.type == "inline":
+            # Attributes in code spans/fences are examples, not rendered IDs.
+            visible = "".join(
+                child.content for child in token.children or [] if child.type == "text"
+            )
+            result.update(re.findall(r"\{[^{}]*#([^\s{}]+)[^{}]*\}", visible))
         html = (
             token.content
             if token.type == "html_block"
